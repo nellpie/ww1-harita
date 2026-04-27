@@ -172,5 +172,91 @@ wrap.onwheel=e=>{
 };
 
 </script>
+  // ── COUNTRY DATA ─────────────────────────
+let countryData = {};
+
+fetch('countries_data.json') // ⚠️ json yap
+  .then(r => r.json())
+  .then(d => countryData = d)
+  .catch(() => console.warn("country data yok"));
+
+// ── MINI POPUP ─────────────────────────
+function showMiniPopup(name) {
+  let el = document.getElementById('mini-popup');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'mini-popup';
+    el.style.position = 'fixed';
+    el.style.bottom = '90px';
+    el.style.left = '50%';
+    el.style.transform = 'translate(-50%,20px)';
+    el.style.opacity = '0';
+    el.style.transition = 'all .25s ease';
+    el.style.background = '#111';
+    el.style.borderRadius = '12px';
+    el.style.padding = '10px';
+    el.style.width = '220px';
+    el.style.color = 'white';
+    el.style.zIndex = '60';
+    document.body.appendChild(el);
+  }
+
+  const info = countryData[name] || {};
+
+  el.innerHTML = `
+    <img src="${info.flag || ''}" 
+         style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:6px;">
+    <div style="font-weight:bold">${name}</div>
+    <div style="font-size:12px;opacity:.8">${info.short || ''}</div>
+    <button id="more-btn" style="margin-top:6px;width:100%">Detay</button>
+  `;
+
+  setTimeout(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translate(-50%,0)';
+  }, 10);
+
+  document.getElementById('more-btn').onclick = () => showDetailPopup(name);
+}
+
+// ── DETAIL POPUP ─────────────────────────
+function showDetailPopup(name) {
+  let el = document.getElementById('detail-popup');
+
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'detail-popup';
+    el.style.position = 'fixed';
+    el.style.inset = '0';
+    el.style.background = 'rgba(0,0,0,0.85)';
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'center';
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .25s';
+    el.style.zIndex = '70';
+    document.body.appendChild(el);
+  }
+
+  const info = countryData[name] || {};
+
+  el.innerHTML = `
+    <div style="background:#111;padding:20px;border-radius:12px;max-width:320px;text-align:center;transform:scale(.9);transition:.25s">
+      <h2>${name}</h2>
+      <p>${info.description || 'Bilgi yok'}</p>
+      <button id="close-btn">Kapat</button>
+    </div>
+  `;
+
+  setTimeout(() => {
+    el.style.opacity = '1';
+    el.firstChild.style.transform = 'scale(1)';
+  }, 10);
+
+  document.getElementById('close-btn').onclick = () => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 200);
+  };
+}
 </body>
 </html>
