@@ -1,0 +1,18 @@
+{
+  "name": "WWI Harita",
+  "short_name": "WWI",
+  "description": "Birinci Dünya Savaşı interaktif haritası (1914–1918)",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#0e0b06",
+  "theme_color": "#1a1008",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
