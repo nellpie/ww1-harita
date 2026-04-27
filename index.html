@@ -8,8 +8,6 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#1a1008" />
   <title>WWI Harita</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icon.png" />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=IM+Fell+English&display=swap');
 
@@ -50,7 +48,14 @@
       transform-origin: 0 0;
       will-change: transform;
       display: block;
-      /* size set by JS after image loads */
+    }
+
+    /* ── CANVAS OVERLAY FOR HITBOXES ── */
+    #hitbox-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      cursor: pointer;
+      z-index: 10;
     }
 
     /* ── VIGNETTE ── */
@@ -210,6 +215,226 @@
     /* ── MAP CROSSFADE ── */
     #map-img { transition: opacity 0.25s; }
     #map-img.fading { opacity: 0; }
+
+    /* ── POPUP MODAL ── */
+    #popup-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: var(--ui-bg);
+      border: 2px solid var(--parchment);
+      border-radius: 8px;
+      padding: 24px;
+      z-index: 200;
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      max-width: 380px;
+    }
+    #popup-modal.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .popup-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    .popup-flag {
+      width: 60px;
+      height: 40px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .popup-flag img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .popup-info h3 {
+      font-size: 16px;
+      color: var(--cream);
+      margin-bottom: 4px;
+      letter-spacing: 0.1em;
+    }
+
+    .popup-year {
+      font-size: 11px;
+      color: var(--parchment);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .popup-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .popup-btn {
+      flex: 1;
+      padding: 10px 14px;
+      background: var(--red);
+      border: none;
+      color: var(--cream);
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .popup-btn:active { background: var(--parchment-dark); }
+    .popup-btn.secondary {
+      background: rgba(201,169,110,0.2);
+      border: 1px solid var(--parchment);
+    }
+    .popup-btn.secondary:active { background: rgba(201,169,110,0.35); }
+
+    .close-popup {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--parchment);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── DETAIL PANEL ── */
+    #detail-panel {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 400px;
+      height: 100vh;
+      background: var(--ui-bg);
+      border-left: 2px solid var(--parchment);
+      overflow-y: auto;
+      z-index: 150;
+      backdrop-filter: blur(8px);
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+    #detail-panel.active {
+      transform: translateX(0);
+    }
+
+    .panel-header {
+      position: sticky;
+      top: 0;
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0,0,0,0.3);
+    }
+
+    .panel-header h2 {
+      font-size: 16px;
+      color: var(--cream);
+      letter-spacing: 0.1em;
+    }
+
+    .close-panel {
+      background: none;
+      border: none;
+      color: var(--parchment);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .panel-content {
+      padding: 24px;
+    }
+
+    .panel-content h3 {
+      color: var(--parchment);
+      margin-top: 16px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .panel-content p {
+      line-height: 1.6;
+      color: #c9a96e;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .loading-spinner {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(201,169,110,0.2);
+      border-top-color: var(--parchment);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-box {
+      background: rgba(139, 26, 26, 0.2);
+      border-left: 3px solid var(--red);
+      padding: 12px;
+      margin-bottom: 12px;
+      border-radius: 4px;
+      color: #d4a5a5;
+      font-size: 12px;
+    }
+
+    @media (max-width: 768px) {
+      #detail-panel {
+        width: 100%;
+        bottom: 0;
+        height: 60vh;
+        border-left: none;
+        border-top: 2px solid var(--parchment);
+      }
+
+      #popup-modal {
+        max-width: calc(100vw - 40px);
+      }
+    }
   </style>
 </head>
 <body>
@@ -226,6 +451,7 @@
 <!-- Map -->
 <div id="map-wrap">
   <img id="map-img" src="" alt="map" draggable="false" />
+  <canvas id="hitbox-canvas"></canvas>
 </div>
 
 <!-- Top bar -->
@@ -254,30 +480,148 @@
   </div>
 </div>
 
+<!-- Popup Modal -->
+<div id="popup-modal">
+  <button class="close-popup" onclick="closePopup()">×</button>
+  <div class="popup-header">
+    <div class="popup-flag">
+      <img id="popup-flag-img" src="" alt="flag" style="display:none">
+    </div>
+    <div class="popup-info">
+      <h3 id="popup-country-name">Ülke Adı</h3>
+      <div class="popup-year" id="popup-year">1918</div>
+    </div>
+  </div>
+  <div class="popup-buttons">
+    <button class="popup-btn" onclick="showDetail()">📖 Bilgi Aç</button>
+    <button class="popup-btn secondary" onclick="closePopup()">Kapat</button>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div id="detail-panel">
+  <div class="panel-header">
+    <h2 id="detail-title">Ülke Detayları</h2>
+    <button class="close-panel" onclick="closeDetail()">×</button>
+  </div>
+  <div class="panel-content" id="panel-content">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p style="color: var(--parchment); font-size: 12px;">Bilgi yükleniyor...</p>
+    </div>
+  </div>
+</div>
+
+<!-- API Key Setup Modal -->
+<div id="api-key-modal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(4px);">
+  <div style="background: var(--ui-bg); border: 2px solid var(--parchment); border-radius: 8px; padding: 32px; max-width: 420px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+    <h2 style="font-size: 18px; color: var(--cream); margin-bottom: 12px; letter-spacing: 0.1em;">API Anahtarını Ayarla</h2>
+    <p style="color: #c9a96e; font-size: 13px; line-height: 1.5; margin-bottom: 20px;">
+      Claude AI'den ülke bilgilerini almak için Anthropic API anahtarı gerekli. 
+      <a href="https://console.anthropic.com/keys" target="_blank" style="color: var(--parchment); text-decoration: underline;">console.anthropic.com</a> adresinden alabilirsin.
+    </p>
+    
+    <input 
+      id="api-key-input" 
+      type="password" 
+      placeholder="sk-ant-..." 
+      style="
+        width: 100%;
+        padding: 12px;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--cream);
+        font-family: monospace;
+        font-size: 12px;
+        margin-bottom: 16px;
+        transition: border-color 0.2s;
+      "
+      onkeypress="if(event.key==='Enter') saveApiKey()"
+    />
+    
+    <div style="display: flex; gap: 10px;">
+      <button 
+        onclick="saveApiKey()" 
+        style="
+          flex: 1;
+          padding: 12px;
+          background: var(--red);
+          border: none;
+          color: var(--cream);
+          border-radius: 4px;
+          cursor: pointer;
+          font-family: 'Cinzel', serif;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          transition: all 0.2s;
+        "
+        onmouseover="this.style.background='var(--parchment-dark)'"
+        onmouseout="this.style.background='var(--red)'"
+      >
+        Kaydet
+      </button>
+      <button 
+        onclick="skipApiKey()" 
+        style="
+          flex: 1;
+          padding: 12px;
+          background: rgba(201,169,110,0.2);
+          border: 1px solid var(--parchment);
+          color: var(--parchment);
+          border-radius: 4px;
+          cursor: pointer;
+          font-family: 'Cinzel', serif;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          transition: all 0.2s;
+        "
+        onmouseover="this.style.background='rgba(201,169,110,0.35)'"
+        onmouseout="this.style.background='rgba(201,169,110,0.2)'"
+      >
+        Sonra
+      </button>
+    </div>
+    
+    <p style="color: #8b7355; font-size: 11px; margin-top: 12px; text-align: center;">
+      ℹ️ Anahtarı tarayıcında saklanır, bize gönderilmez
+    </p>
+  </div>
+</div>
+
 <script>
   // ── CONFIG ──────────────────────────────────────────────────────────────────
   const YEARS = [1914, 1915, 1916, 1917, 1918];
   const TYPES = ['country', 'alliance'];
   const TYPE_LABELS = { country: 'Ülke Sınırları', alliance: 'İttifak Haritası' };
-  const MAP_DIR = '';
+  const MAP_DIR = './maps/';
+  const HITBOXES_FILE = './hitboxes_merged.json';
 
   // ── STATE ───────────────────────────────────────────────────────────────────
   let yearIdx = 0;
   let typeIdx = 0;
+  let hitboxData = null;
+  let selectedCountry = null;
 
   // Pan / zoom state
   let scale = 1;
-  let ox = 0, oy = 0;          // offset (top-left corner of image in viewport px)
-  let imgW = 0, imgH = 0;      // natural image dimensions
+  let ox = 0, oy = 0;
+  let imgW = 0, imgH = 0;
   let minScale = 1;
 
-  const img   = document.getElementById('map-img');
-  const wrap  = document.getElementById('map-wrap');
+  const img = document.getElementById('map-img');
+  const canvas = document.getElementById('hitbox-canvas');
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('map-wrap');
   const yearEl = document.getElementById('year-display');
   const typeLabel = document.getElementById('type-label');
   const btnPrev = document.getElementById('btn-prev');
   const btnNext = document.getElementById('btn-next');
-  const loader  = document.getElementById('loader');
+  const loader = document.getElementById('loader');
   const loaderBar = document.getElementById('loader-bar');
 
   // ── HELPERS ─────────────────────────────────────────────────────────────────
@@ -288,7 +632,6 @@
   function clampOffset(x, y, s) {
     const vw = window.innerWidth, vh = window.innerHeight;
     const iw = imgW * s, ih = imgH * s;
-    // If image smaller than viewport in a dimension, center it; else clamp
     const minX = iw > vw ? vw - iw : (vw - iw) / 2;
     const minY = ih > vh ? vh - ih : (vh - ih) / 2;
     const maxX = iw > vw ? 0 : (vw - iw) / 2;
@@ -303,6 +646,7 @@
     const c = clampOffset(x, y, s);
     ox = c.x; oy = c.y; scale = s;
     img.style.transform = `translate(${ox}px,${oy}px) scale(${scale})`;
+    canvas.style.transform = `translate(${ox}px,${oy}px) scale(${scale})`;
   }
 
   function fitToScreen() {
@@ -315,26 +659,151 @@
     applyTransform(cx, cy, s);
   }
 
-  // ── IMAGE LOAD ───────────────────────────────────────────────────────────────
-  let preloaded = {};
+  // ── LOAD HITBOXES ──────────────────────────────────────────────────────────
+  async function loadHitboxes() {
+    try {
+      const response = await fetch(HITBOXES_FILE);
+      if (!response.ok) throw new Error('Hitboxes bulunamadı');
+      hitboxData = await response.json();
+    } catch (error) {
+      console.error('Hitboxes yüklenemedi:', error);
+    }
+  }
 
-  function preloadAll(cb) {
-    let total = YEARS.length * TYPES.length, done = 0;
-    YEARS.forEach(y => {
-      TYPES.forEach(t => {
-        const key = `${y}_${t}`;
-        const i = new Image();
-        i.onload = i.onerror = () => {
-          done++;
-          loaderBar.style.width = (done / total * 100) + '%';
-          if (done === total) cb();
-        };
-        i.src = mapSrc(y, t);
-        preloaded[key] = i;
-      });
+  // ── POINT IN POLYGON ───────────────────────────────────────────────────────
+  function isPointInPolygon(x, y, points) {
+    let inside = false;
+    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+      let xi = points[i].x, yi = points[i].y;
+      let xj = points[j].x, yj = points[j].y;
+      let intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  // ── CANVAS CLICK HANDLER ───────────────────────────────────────────────────
+  canvas.addEventListener('click', (e) => {
+    if (!hitboxData) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left - ox) / scale;
+    const y = (e.clientY - rect.top - oy) / scale;
+
+    const year = YEARS[yearIdx].toString();
+    const countriesForYear = hitboxData.countries.filter(c => c.year === year);
+
+    for (let country of countriesForYear) {
+      if (country.points && isPointInPolygon(x, y, country.points)) {
+        selectedCountry = country;
+        showPopup(country);
+        return;
+      }
+    }
+  });
+
+  // ── SHOW POPUP ─────────────────────────────────────────────────────────────
+  async function showPopup(country) {
+    document.getElementById('popup-country-name').textContent = country.name;
+    document.getElementById('popup-year').textContent = country.year;
+
+    // Fetch flag from Wikipedia
+    const flagUrl = await getWikipediaFlag(country.name);
+    const flagImg = document.getElementById('popup-flag-img');
+    if (flagUrl) {
+      flagImg.src = flagUrl;
+      flagImg.style.display = 'block';
+    } else {
+      flagImg.style.display = 'none';
+    }
+
+    const modal = document.getElementById('popup-modal');
+    modal.classList.add('active');
+  }
+
+  // ── GET WIKIPEDIA FLAG ─────────────────────────────────────────────────────
+  async function getWikipediaFlag(countryName) {
+    try {
+      const response = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(countryName)}`);
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.thumbnail?.url || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // ── POPUP HANDLERS ─────────────────────────────────────────────────────────
+  function closePopup() {
+    document.getElementById('popup-modal').classList.remove('active');
+  }
+
+  function showDetail() {
+    closePopup();
+    if (!selectedCountry) return;
+
+    document.getElementById('detail-title').textContent = selectedCountry.name;
+    document.getElementById('detail-panel').classList.add('active');
+
+    const panelContent = document.getElementById('panel-content');
+    panelContent.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><p style="color: var(--parchment); font-size: 12px;">Claude AI\'den bilgi yükleniyor...</p></div>';
+
+    getCountryInfo(selectedCountry.name, selectedCountry.year).then(info => {
+      panelContent.innerHTML = `
+        <h3>📖 Genel Bilgiler</h3>
+        <p>${info}</p>
+        
+        <h3>📅 Dönem</h3>
+        <p>Birinci Dünya Savaşı (1914-1918) sırasında ${selectedCountry.year} yılında bu ülkenin durumu gösterilmektedir.</p>
+      `;
+    }).catch(error => {
+      panelContent.innerHTML = `
+        <div class="error-box">⚠️ ${error.message}</div>
+        <p style="font-size: 12px;">Not: Claude API anahtarını localStorage'da kaydet:</p>
+        <p style="font-size: 11px; color: var(--parchment); margin-top: 10px;">localStorage.setItem('ww1_api_key', 'sk-ant-...');</p>
+      `;
     });
   }
 
+  function closeDetail() {
+    document.getElementById('detail-panel').classList.remove('active');
+  }
+
+  // ── CLAUDE API ─────────────────────────────────────────────────────────────
+  async function getCountryInfo(countryName, year) {
+    const apiKey = localStorage.getItem('ww1_api_key');
+    if (!apiKey) {
+      throw new Error('API anahtarı bulunamadı');
+    }
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-20250805',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: `${countryName} ülkesinin Birinci Dünya Savaşında ${year} yılındaki durumunu (savaşa katılım, müttefiklik, askeri durumu vb.) Türkçe olarak kısa ve öz bir şekilde açıkla. Maksimum 200 kelime.`
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'API hatası');
+    }
+
+    const data = await response.json();
+    return data.content[0]?.text || 'Bilgi bulunamadı.';
+  }
+
+  // ── IMAGE LOAD ──────────────────────────────────────────────────────────────
   function showMap(year, type, animate) {
     const src = mapSrc(year, type);
     if (animate) img.classList.add('fading');
@@ -344,8 +813,10 @@
         if (!imgW) {
           imgW = img.naturalWidth;
           imgH = img.naturalHeight;
-          img.style.width  = imgW + 'px';
+          img.style.width = imgW + 'px';
           img.style.height = imgH + 'px';
+          canvas.width = imgW;
+          canvas.height = imgH;
           fitToScreen();
         }
         img.classList.remove('fading');
@@ -363,7 +834,7 @@
     showMap(year, type, true);
   }
 
-  // ── YEAR NAV ─────────────────────────────────────────────────────────────────
+  // ── YEAR NAV ────────────────────────────────────────────────────────────────
   btnPrev.addEventListener('click', () => {
     if (yearIdx > 0) { yearIdx--; updateUI(); }
   });
@@ -376,7 +847,7 @@
     updateUI();
   });
 
-  // ── TOUCH: PAN & PINCH ───────────────────────────────────────────────────────
+  // ── TOUCH & MOUSE HANDLERS ──────────────────────────────────────────────────
   let lastTouches = null;
   let panStart = null;
 
@@ -411,18 +882,16 @@
 
     } else if (touches.length === 2 && lastTouches.length >= 2) {
       const prevDist = getTouchDist(lastTouches[0], lastTouches[1]);
-      const newDist  = getTouchDist(touches[0], touches[1]);
-      const factor   = newDist / prevDist;
+      const newDist = getTouchDist(touches[0], touches[1]);
+      const factor = newDist / prevDist;
 
       const mid = getTouchMidpoint(touches[0], touches[1]);
       const newScale = Math.min(Math.max(scale * factor, minScale), minScale * 12);
 
-      // Zoom toward midpoint
       const nx = mid.x - (mid.x - ox) * (newScale / scale);
       const ny = mid.y - (mid.y - oy) * (newScale / scale);
       applyTransform(nx, ny, newScale);
 
-      // Also pan with midpoint movement
       const prevMid = getTouchMidpoint(lastTouches[0], lastTouches[1]);
       const pdx = mid.x - prevMid.x, pdy = mid.y - prevMid.y;
       applyTransform(ox + pdx, oy + pdy, scale);
@@ -442,7 +911,6 @@
     }
   }, { passive: false });
 
-  // ── MOUSE: PAN & WHEEL ZOOM ──────────────────────────────────────────────────
   let mouseDown = false, mStart = null;
 
   wrap.addEventListener('mousedown', e => {
@@ -465,7 +933,6 @@
     applyTransform(nx, ny, newScale);
   }, { passive: false });
 
-  // ── DOUBLE-TAP TO RESET ──────────────────────────────────────────────────────
   let lastTap = 0;
   wrap.addEventListener('touchend', e => {
     const now = Date.now();
@@ -473,32 +940,71 @@
     lastTap = now;
   });
 
-  // ── RESIZE ───────────────────────────────────────────────────────────────────
   window.addEventListener('resize', fitToScreen);
 
-  // ── INIT ─────────────────────────────────────────────────────────────────────
-  // Try to load first map immediately, preload rest in background
-  img.src = mapSrc(YEARS[0], TYPES[0]);
-  img.onload = () => {
-    imgW = img.naturalWidth;
-    imgH = img.naturalHeight;
-    img.style.width  = imgW + 'px';
-    img.style.height = imgH + 'px';
-    fitToScreen();
-    loader.classList.add('hidden');
-    // preload rest silently
-    YEARS.forEach(y => TYPES.forEach(t => {
-      if (!(y === 1914 && t === 'country')) {
-        const i = new Image(); i.src = mapSrc(y, t);
-      }
-    }));
-  };
-  img.onerror = () => {
-    // maps folder might be missing — still hide loader
-    loader.classList.add('hidden');
-  };
+  // Close popup when clicking outside
+  document.addEventListener('click', (e) => {
+    const modal = document.getElementById('popup-modal');
+    if (modal.classList.contains('active') && !modal.contains(e.target) && !canvas.contains(e.target)) {
+      closePopup();
+    }
+  });
 
-  updateUI();
+  // ── API KEY MODAL HANDLERS ─────────────────────────────────────────────────
+  function saveApiKey() {
+    const apiKey = document.getElementById('api-key-input').value.trim();
+    if (!apiKey) {
+      alert('Lütfen API anahtarını gir');
+      return;
+    }
+    if (!apiKey.startsWith('sk-ant-')) {
+      alert('Geçersiz anahtarlar. sk-ant- ile başlamalı');
+      return;
+    }
+    localStorage.setItem('ww1_api_key', apiKey);
+    document.getElementById('api-key-modal').style.display = 'none';
+  }
+
+  function skipApiKey() {
+    document.getElementById('api-key-modal').style.display = 'none';
+  }
+
+  // ── INIT ────────────────────────────────────────────────────────────────────
+  async function init() {
+    // Check if API key already exists
+    const existingKey = localStorage.getItem('ww1_api_key');
+    if (existingKey) {
+      document.getElementById('api-key-modal').style.display = 'none';
+    }
+
+    await loadHitboxes();
+    
+    img.src = mapSrc(YEARS[0], TYPES[0]);
+    img.onload = () => {
+      imgW = img.naturalWidth;
+      imgH = img.naturalHeight;
+      img.style.width = imgW + 'px';
+      img.style.height = imgH + 'px';
+      canvas.width = imgW;
+      canvas.height = imgH;
+      fitToScreen();
+      loader.classList.add('hidden');
+
+      YEARS.forEach(y => TYPES.forEach(t => {
+        if (!(y === 1914 && t === 'country')) {
+          const i = new Image();
+          i.src = mapSrc(y, t);
+        }
+      }));
+    };
+    img.onerror = () => {
+      loader.classList.add('hidden');
+    };
+
+    updateUI();
+  }
+
+  init();
 </script>
 </body>
 </html>
