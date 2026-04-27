@@ -100,7 +100,7 @@ wrap.onclick = e => {
  let p = toImg(e.clientX, e.clientY);
  for (let c of hitboxes){
   if(c.points && inside(p,c.points)){
-    showMini(c.name);
+    showMiniPopup(c.name);
     return;
   }
  }
