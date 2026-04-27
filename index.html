@@ -170,9 +170,7 @@ wrap.onwheel=e=>{
  scale*=f;
  img.style.transform=`translate(${ox}px,${oy}px) scale(${scale})`;
 };
-
-</script>
-  // ── COUNTRY DATA ─────────────────────────
+// ── COUNTRY DATA ─────────────────────────
 let countryData = {};
 
 fetch('countries_data.json') // ⚠️ json yap
@@ -257,6 +255,7 @@ function showDetailPopup(name) {
     el.style.opacity = '0';
     setTimeout(() => el.remove(), 200);
   };
-}
+
+</script>
 </body>
 </html>
